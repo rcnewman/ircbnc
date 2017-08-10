@@ -22,11 +22,14 @@ class Client(asyncio.Protocol):
     def connection_made(self, transport):
         self.transport = transport
         self.log.info("Connection created.")
+        self.digest_obuf()
  
     def digest_obuf(self):
         if self.obuf:
-            self.write(self.obuf.pop(0))
-        loop.call_later(self.obuf_timer, self.digest_obuf)
+            line = self.obuf.pop(0)
+            self.log.debug("Client: " + line)
+            self.transport.write(line.encode('utf-8')+b'\n')
+        self.loop.call_later(self.obuf_timer, self.digest_obuf)
 
     def connection_lost(self, exc):
         self.log.error("Lost Connection")
