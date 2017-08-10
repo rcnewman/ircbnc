@@ -3,12 +3,9 @@ import logging
 
 
 class Client(asyncio.Protocol):
-    """
-    Client connection to IRC
-    """
-
-    def connection_made(self, transport):
-        self.transport = transport
+    def __init__(self, loop):
+        self.loop = loop
+        self.caps = set()
 
         #TODO: cleanup logging
         self.log = logging.getLogger()
@@ -19,8 +16,17 @@ class Client(asyncio.Protocol):
 
         self.ibuf = ""
         self.obuf = []
+        self.obuf_timer = 2.0
 
+
+    def connection_made(self, transport):
+        self.transport = transport
         self.log.info("Connection created.")
+ 
+    def digest_obuf(self):
+        if self.obuf:
+            self.write(self.obuf.pop(0))
+        loop.call_later(self.obuf_timer, self.digest_obuf)
 
     def connection_lost(self, exc):
         self.log.error("Lost Connection")
@@ -41,4 +47,8 @@ class Client(asyncio.Protocol):
 
 
     def register(self, nick, ident, realname, password):
-    	pass    
+        pass
+
+    def request_capabilities(self):
+        self.obuf.append("CAP LS 302")
+	  
